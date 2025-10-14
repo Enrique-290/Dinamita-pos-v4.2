@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <link rel="stylesheet" href="styles.css?v=4.4.1"/>
+  <link rel="stylesheet" href="styles.css?v=4.2-base"/>
 </head>
 <body>
 <div id="app">
@@ -15,7 +15,7 @@
     <div class="brand">
       <img id="brandLogo" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScxODAnIGhlaWdodD0nNDgnIHZpZXdCb3g9JzAgMCAxODAgNDgnPgogIDxyZWN0IHdpZHRoPScxODAnIGhlaWdodD0nNDgnIHJ4PScxMCcgZmlsbD0nI2ZmZmZmZicvPgogIDxyZWN0IHg9JzQnIHk9JzQnIHdpZHRoPScxNzInIGhlaWdodD0nNDAnIHJ4PSc4JyBmaWxsPScjZDAwJyBvcGFjaXR5PScwLjA4Jy8+CiAgPHRleHQgeD0nMTQnIHk9JzMwJyBmb250LXNpemU9JzIwJyBmaWxsPScjMTExJyBmb250LWZhbWlseT0nQXJpYWwgQmxhY2ssIEFyaWFsJz5ESU5BTUlUQTwvdGV4dD4KICA8dGV4dCB4PScxMjAnIHk9JzMwJyBmb250LXNpemU9JzE2JyBmaWxsPScjZDAwJyBmb250LWZhbWlseT0nQXJpYWwgQmxhY2ssIEFyaWFsJz5QT1M8L3RleHQ+Cjwvc3ZnPg==" />
       <div class="brand-title">DINAMITA POS</div>
-      <small class="brand-sub">v4.4.1 • 2025-08-26 21:47</small>
+      <small class="brand-sub">v4.2-base • 2025-10-08 18:56</small>
     </div>
     <nav class="menu">
       <button data-view="dashboard" class="active">🏠 Dashboard</button>
@@ -25,12 +25,12 @@
       <button data-view="membresias">🎟️ Membresías</button>
       <button data-view="cafeteria">☕ Cafetería</button>
       <button data-view="historial">📜 Historial</button>
+      <button data-view="reportes">📊 Reportes</button>
       <button data-view="config">⚙️ Configuración</button>
       <button data-view="ticket">🧾 Ticket 58mm</button>
-      <a href="#compras" class="item" onclick="UI.show('compras')">🧾 Compras</a>
-</nav>
+    </nav>
     <div class="sidebar-footer">
-      <small>DINAMITA • v4.4.1</small>
+      <small>DINAMITA • v4.2-base</small>
     </div>
   </aside>
 
@@ -52,6 +52,22 @@
         <div class="card"><div class="card-title">📦 Productos en stock</div><div class="card-value" id="kpiStock">0</div></div>
         <div class="card"><div class="card-title">📈 Ganancia de hoy</div><div class="card-value" id="kpiGananciaHoy">$0</div></div>
       </div>
+      <div class="panel">
+        <div class="panel-title">📊 Gráficas</div>
+        <div class="chart-toolbar">
+          <label>Rango: <input type="date" id="dashIni"> – <input type="date" id="dashFin"></label>
+          <button class="btn small" id="dashExportCsv">📤 Exportar CSV</button>
+          <button class="btn small outline" id="dashExportPng">🖼️ Descargar imagen</button>
+        </div>
+        <div class="grid-2">
+          <div class="chart-wrap">
+            <canvas id="chartVentas"></canvas>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="chartProductos"></canvas>
+          </div>
+        </div>
+      </div>
     </section>
 
     <section id="view-ventas" class="view hidden">
@@ -59,25 +75,57 @@
         <div class="panel-title">🛍️ Nueva venta</div>
         <div class="grid-2">
           <div>
-            <label>Buscar producto</label>
-            <input id="ventaBuscar" placeholder="Nombre / SKU" oninput="Ventas.buscarProducto(this.value)">
-            <div id="ventaResultados" class="list"></div>
+            <label>Tipo de venta</label>
+            <select id="ventaTipo" onchange="Ventas.changeTipo()">
+              <option value="producto" selected>Producto</option>
+              <option value="membresia">Membresía</option>
+            </select>
           </div>
           <div>
-            <label>Carrito</label>
-            <div id="carrito" class="list"></div>
-            <div class="totals">
-              <div>Subtotal: <strong id="ventaSubtotal">$0</strong></div>
-              <div>IVA (config): <strong id="ventaIVA">$0</strong></div>
-              <div>Total: <strong id="ventaTotal">$0</strong></div>
+            <label>Cliente</label>
+            <div class="searchbox">
+              <input id="ventaClienteSearch" placeholder="Público General · 🔎 Buscar nombre, tel o email" oninput="Ventas.searchCliente(this.value)" autocomplete="off">
+              <div id="ventaClienteResults" class="autocomplete hidden"></div>
+              <input id="ventaCliente" type="hidden" value="C1">
             </div>
           </div>
         </div>
-        <div class="grid-2">
-          <div><label>Cliente (opcional)</label><select id="ventaCliente"></select></div>
-          <div><label>Notas del ticket</label><input id="ventaNotas" placeholder="Gracias por tu compra en Dinamita Gym 💥"></div>
+
+        <div id="ventaProductoBox">
+          <div class="grid-2">
+            <div>
+              <label>Buscar producto</label>
+              <input id="ventaBuscar" placeholder="Nombre / SKU" oninput="Ventas.buscarProducto(this.value)">
+              <div id="ventaResultados" class="list"></div>
+            </div>
+            <div>
+              <label>Carrito</label>
+              <div id="carrito" class="list"></div>
+              <div class="totals">
+                <div>Subtotal: <strong id="ventaSubtotal">$0</strong></div>
+                <div>IVA (config): <strong id="ventaIVA">$0</strong></div>
+                <div>Total: <strong id="ventaTotal">$0</strong></div>
+              </div>
+            </div>
+          </div>
         </div>
-        <div class="grid-2"><div></div><div class="right"><button class="btn" onclick="Ventas.confirmar()">✅ Confirmar venta</button></div></div>
+
+        <div id="ventaMembresiaBox" class="hidden">
+          <div class="grid-3">
+            <div><label>Tipo</label><select id="vMemTipo"></select></div>
+            <div><label>Inicio</label><input id="vMemInicio" type="date"></div>
+            <div><label>Fin</label><input id="vMemFin" type="date"></div>
+            <div class="col-span-3"><label>Notas</label><input id="vMemNotas" placeholder="Notas de la membresía"></div>
+          </div>
+          <div class="right"><button class="btn small" onclick="Ventas.addMembresia()">➕ Agregar membresía</button></div>
+        </div>
+
+        <div class="grid-2">
+          <div></div>
+          <div class="right">
+            <button class="btn" onclick="Ventas.confirmar()">✅ Confirmar venta</button>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -139,16 +187,20 @@
               <input id="memClienteId" type="hidden">
             </div>
           </div>
-          <div><label>Tipo</label><select id="memTipo" onchange="Membresias.changeTipo()"><option>Visita</option><option>Semana</option><option selected>Mensualidad</option><option>6 Meses</option><option>12 Meses</option><option>VIP</option><option>Promo 2x$500</option></select></div>
+          <div><label>Tipo</label><select id="memTipo" onchange="Membresias.changeTipo()"></select></div>
           <div><label>Inicio</label><input id="memInicio" type="date"></div>
-          <div><label>Fin</label><input id="memFin" type="date" readonly></div>
+          <div><label>Fin</label><input id="memFin" type="date"></div>
           <div><label>Notas</label><input id="memNotas"></div>
           <div class="right"><button class="btn" onclick="Membresias.guardar()">💾 Guardar</button></div>
         </div>
       </div>
       <div class="panel">
         <div class="panel-title">🎟️ Membresías</div>
-        <div class="filters"><input id="memSearch" placeholder="Buscar cliente..." oninput="Membresias.renderTabla()"><select id="memStatus" onchange="Membresias.renderTabla()"><option value="">Todos</option><option value="activa">Activas</option><option value="vencida">Vencidas</option><option value="próxima">Próx. a vencer</option></select></div>
+        <div class="filters">
+          <input id="memSearch" placeholder="Buscar cliente..." oninput="Membresias.renderTabla()">
+          <select id="memStatus" onchange="Membresias.renderTabla()"><option value="">Todos</option><option value="activa">Activas</option><option value="vencida">Vencidas</option><option value="próxima">Próx. a vencer</option></select>
+          <button class="btn small" onclick="Membresias.exportCSV()">📤 Exportar CSV</button>
+        </div>
         <div id="memTabla" class="table"></div>
       </div>
     </section>
@@ -163,14 +215,84 @@
       </div>
     </section>
 
+    <section id="view-reportes" class="view hidden">
+      <div class="panel">
+        <div class="panel-title">📊 Reportes</div>
+        <div class="tabs">
+          <div class="tab active" data-tab="rep-ventas" onclick="Reportes.show('rep-ventas', this)">Ventas</div>
+          <div class="tab" data-tab="rep-membresias" onclick="Reportes.show('rep-membresias', this)">Membresías</div>
+          <div class="tab" data-tab="rep-inventario" onclick="Reportes.show('rep-inventario', this)">Inventario</div>
+          <div class="tab" data-tab="rep-tops" onclick="Reportes.show('rep-tops', this)">Tops</div>
+        </div>
+
+        <div id="rep-ventas" class="rep-pane">
+          <div class="filters">
+            <label>De <input type="date" id="repVenIni"></label>
+            <label>A <input type="date" id="repVenFin"></label>
+            <button class="btn small" onclick="Reportes.renderVentas()">Actualizar</button>
+            <button class="btn small" onclick="Reportes.exportVentas()">📤 Exportar CSV</button>
+          </div>
+          <div id="repVenKpi" class="cards"></div>
+          <div id="repVenTabla" class="table"></div>
+        </div>
+
+        <div id="rep-membresias" class="rep-pane hidden">
+          <div class="filters">
+            <label>De <input type="date" id="repMemIni"></label>
+            <label>A <input type="date" id="repMemFin"></label>
+            <button class="btn small" onclick="Reportes.renderMembresias()">Actualizar</button>
+            <button class="btn small" onclick="Reportes.exportMembresias()">📤 Exportar CSV</button>
+          </div>
+          <div id="repMemKpi" class="cards"></div>
+          <div id="repMemTabla" class="table"></div>
+        </div>
+
+        <div id="rep-inventario" class="rep-pane hidden">
+          <div class="filters">
+            <button class="btn small" onclick="Inventario.exportCSV()">📤 Exportar CSV</button>
+          </div>
+          <div id="repInvTabla" class="table"></div>
+        </div>
+
+        <div id="rep-tops" class="rep-pane hidden">
+          <div class="grid-2">
+            <div class="chart-wrap"><canvas id="topProductos"></canvas></div>
+            <div class="chart-wrap"><canvas id="topMembresias"></canvas></div>
+          </div>
+          <div class="chart-wrap mt-2"><canvas id="topClientes"></canvas></div>
+        </div>
+      </div>
+    </section>
+
     <section id="view-config" class="view hidden">
       <div class="panel">
         <div class="panel-title">⚙️ Configuración</div>
         <div class="grid-3">
+          <div class="col-span-3"><strong>🎨 Apariencia</strong></div>
+          <div><label>Fondo (bg)</label><input id="cfgBg" type="color"></div>
+          <div><label>Panel</label><input id="cfgPanel" type="color"></div>
+          <div><label>Menú</label><input id="cfgMenu" type="color"></div>
+          <div><label>Primario</label><input id="cfgPrimary" type="color"></div>
+          <div><label>Texto</label><input id="cfgText" type="color"></div>
+          <div><label>Subtexto</label><input id="cfgSub" type="color"></div>
+          <div class="col-span-3 right">
+            <button class="btn small" onclick="Config.guardarTema()">💾 Guardar tema</button>
+            <button class="btn small outline" onclick="Config.resetTema()">↩️ Restablecer tema Dinamita</button>
+          </div>
+
+          <div class="col-span-3"><strong>🧾 Ticket</strong></div>
           <div><label>IVA (%)</label><input id="cfgIVA" type="number" step="1"></div>
-          <div class="col-span-3"><label>Mensaje del ticket</label><input id="cfgMensaje"></div>
+          <div class="col-span-3"><label>Mensaje del ticket (pie)</label><input id="cfgMensaje"></div>
           <div><label>Logo</label><input type="file" accept="image/*" onchange="Config.loadLogo(this)"></div>
-          <div class="col-span-3 right"><button class="btn" onclick="Config.guardar()">💾 Guardar</button><button class="btn outline" onclick="Config.reset()">↩️ Restablecer</button></div>
+          <div><label>Nombre</label><input id="cfgBizName"></div>
+          <div><label>Dirección</label><input id="cfgBizAddr"></div>
+          <div><label>Teléfono</label><input id="cfgBizTel"></div>
+          <div><label>Email</label><input id="cfgBizEmail"></div>
+          <div><label>Redes</label><input id="cfgBizSocial"></div>
+          <div class="col-span-3 right">
+            <button class="btn" onclick="Config.guardar()">💾 Guardar</button>
+            <button class="btn outline" onclick="Config.reset()">↩️ Restablecer</button>
+          </div>
         </div>
       </div>
     </section>
@@ -180,8 +302,8 @@
         <div class="panel-title">🧾 Vista previa de ticket 58mm</div>
         <div class="ticket" id="ticketPreview">
           <div class="t-logo"><img id="ticketLogo" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScxODAnIGhlaWdodD0nNDgnIHZpZXdCb3g9JzAgMCAxODAgNDgnPgogIDxyZWN0IHdpZHRoPScxODAnIGhlaWdodD0nNDgnIHJ4PScxMCcgZmlsbD0nI2ZmZmZmZicvPgogIDxyZWN0IHg9JzQnIHk9JzQnIHdpZHRoPScxNzInIGhlaWdodD0nNDAnIHJ4PSc4JyBmaWxsPScjZDAwJyBvcGFjaXR5PScwLjA4Jy8+CiAgPHRleHQgeD0nMTQnIHk9JzMwJyBmb250LXNpemU9JzIwJyBmaWxsPScjMTExJyBmb250LWZhbWlseT0nQXJpYWwgQmxhY2ssIEFyaWFsJz5ESU5BTUlUQTwvdGV4dD4KICA8dGV4dCB4PScxMjAnIHk9JzMwJyBmb250LXNpemU9JzE2JyBmaWxsPScjZDAwJyBmb250LWZhbWlseT0nQXJpYWwgQmxhY2ssIEFyaWFsJz5QT1M8L3RleHQ+Cjwvc3ZnPg=="></div>
-          <div class="t-title">DINAMITA GYM</div>
-          <div class="t-sub">Ticket de venta</div>
+          <div class="t-title" id="tBizName">DINAMITA GYM</div>
+          <div class="t-sub" id="tBizInfo"></div>
           <div class="t-body" id="ticketBody"><div>Sin ventas recientes</div></div>
         </div>
         <div class="right mt-2"><button class="btn" onclick="Tickets.print()">🖨️ Imprimir</button></div>
@@ -206,49 +328,22 @@
       </div>
     </div>
 
-  
-<section id="compras" class="page hidden">
-  <div class="page-head"><h2>Compras</h2></div>
-  <div class="card">
-    <div class="grid g3">
-      <label>Fecha<input id="cpFecha" type="date"></label>
-      <label>Proveedor<input id="cpProv" placeholder="Nombre proveedor"></label>
-      <label>Folio compra<input id="cpFolio" placeholder="Opcional"></label>
-    </div>
-    <div class="grid g2" style="margin-top:10px">
-      <label>Buscar producto<input id="cpBuscar" placeholder="Nombre / SKU / Código (Enter para agregar)"></label>
-      <div><button class="btn" onclick="Compras.guardar()">💾 Guardar compra</button></div>
-    </div>
-    <div id="cpTabla" class="table mt"></div>
-    <div class="right mt"><b>Total: <span id="cpTotal">$0.00</span></b></div>
-  </div>
-  <div class="card mt">
-    <div class="row" style="align-items:center;justify-content:space-between">
-      <h3>Historial</h3>
-      <button class="btn outline" onclick="Compras.exportarCSV()">⬇️ Exportar CSV</button>
-    </div>
-    <div id="cpHistorial" class="table"></div>
-  </div>
-</section>
-
-</main>
+  </main>
 </div>
 <script>const DEFAULT_LOGO = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScxODAnIGhlaWdodD0nNDgnIHZpZXdCb3g9JzAgMCAxODAgNDgnPgogIDxyZWN0IHdpZHRoPScxODAnIGhlaWdodD0nNDgnIHJ4PScxMCcgZmlsbD0nI2ZmZmZmZicvPgogIDxyZWN0IHg9JzQnIHk9JzQnIHdpZHRoPScxNzInIGhlaWdodD0nNDAnIHJ4PSc4JyBmaWxsPScjZDAwJyBvcGFjaXR5PScwLjA4Jy8+CiAgPHRleHQgeD0nMTQnIHk9JzMwJyBmb250LXNpemU9JzIwJyBmaWxsPScjMTExJyBmb250LWZhbWlseT0nQXJpYWwgQmxhY2ssIEFyaWFsJz5ESU5BTUlUQTwvdGV4dD4KICA8dGV4dCB4PScxMjAnIHk9JzMwJyBmb250LXNpemU9JzE2JyBmaWxsPScjZDAwJyBmb250LWZhbWlseT0nQXJpYWwgQmxhY2ssIEFyaWFsJz5QT1M8L3RleHQ+Cjwvc3ZnPg==";</script>
 
 <script>
-
-// v4.4.1 drawer toggle
-document.addEventListener('DOMContentLoaded',()=>{{
+// drawer toggle
+document.addEventListener('DOMContentLoaded',()=>{
   const btn=document.getElementById('hamburger');
   const bd=document.body;
   const backdrop=document.getElementById('drawerBackdrop');
   const close=()=>bd.classList.remove('drawer-open');
   btn.addEventListener('click',()=>bd.classList.toggle('drawer-open'));
   backdrop.addEventListener('click',close);
-}});
-
+});
 </script>
 
-<script src="app.js?v=4.4.1" defer></script>
+<script src="app.js?v=4.2-base" defer></script>
 </body>
 </html>
