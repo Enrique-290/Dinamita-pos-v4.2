@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <link rel="stylesheet" href="styles.css?v=4.0"/>
+  <link rel="stylesheet" href="styles.css?v=4.3"/>
 </head>
 <body>
 <div id="app">
@@ -15,7 +15,7 @@
     <div class="brand">
       <img id="brandLogo" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScxODAnIGhlaWdodD0nNDgnIHZpZXdCb3g9JzAgMCAxODAgNDgnPgogIDxyZWN0IHdpZHRoPScxODAnIGhlaWdodD0nNDgnIHJ4PScxMCcgZmlsbD0nI2ZmZmZmZicvPgogIDxyZWN0IHg9JzQnIHk9JzQnIHdpZHRoPScxNzInIGhlaWdodD0nNDAnIHJ4PSc4JyBmaWxsPScjZDAwJyBvcGFjaXR5PScwLjA4Jy8+CiAgPHRleHQgeD0nMTQnIHk9JzMwJyBmb250LXNpemU9JzIwJyBmaWxsPScjMTExJyBmb250LWZhbWlseT0nQXJpYWwgQmxhY2ssIEFyaWFsJz5ESU5BTUlUQTwvdGV4dD4KICA8dGV4dCB4PScxMjAnIHk9JzMwJyBmb250LXNpemU9JzE2JyBmaWxsPScjZDAwJyBmb250LWZhbWlseT0nQXJpYWwgQmxhY2ssIEFyaWFsJz5QT1M8L3RleHQ+Cjwvc3ZnPg==" />
       <div class="brand-title">DINAMITA POS</div>
-      <small class="brand-sub">v4.0 • 2025-10-08 18:56</small>
+      <small class="brand-sub">v4.3 • 2025-10-08 18:56</small>
     </div>
     <nav class="menu">
       <button data-view="dashboard" class="active">🏠 Dashboard</button>
@@ -28,10 +28,9 @@
       <button data-view="reportes">📊 Reportes</button>
       <button data-view="config">⚙️ Configuración</button>
       <button data-view="ticket">🧾 Ticket 58mm</button>
-      <a href="#compras" class="item" onclick="UI.show('compras')">🧾 Compras</a>
-</nav>
+    </nav>
     <div class="sidebar-footer">
-      <small>DINAMITA • v4.0</small>
+      <small>DINAMITA • v4.3</small>
     </div>
   </aside>
 
@@ -329,36 +328,10 @@
       </div>
     </div>
 
-  
-<section id="compras" class="page hidden">
-  <div class="page-head"><h2>Compras</h2></div>
-  <div class="card">
-    <div class="grid g3">
-      <label>Fecha<input id="cpFecha" type="date"></label>
-      <label>Proveedor<input id="cpProv" placeholder="Nombre proveedor"></label>
-      <label>Folio compra<input id="cpFolio" placeholder="Opcional"></label>
-    </div>
-    <div class="grid g2" style="margin-top:10px">
-      <label>Buscar producto<input id="cpBuscar" placeholder="Nombre / SKU / Código (Enter para agregar)"></label>
-      <div><button class="btn" onclick="Compras.guardar()">💾 Guardar compra</button></div>
-    </div>
-    <div id="cpTabla" class="table mt"></div>
-    <div class="right mt"><b>Total: <span id="cpTotal">$0.00</span></b></div>
-  </div>
-
-  <div class="card mt">
-    <div class="row" style="align-items:center;justify-content:space-between">
-      <h3>Historial</h3>
-      <button class="btn outline" onclick="Compras.exportarCSV()">⬇️ Exportar CSV</button>
-    </div>
-    <div id="cpHistorial" class="table"></div>
-  </div>
-</section>
-
-</main>
+  </main>
 </div>
 <script>const DEFAULT_LOGO = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScxODAnIGhlaWdodD0nNDgnIHZpZXdCb3g9JzAgMCAxODAgNDgnPgogIDxyZWN0IHdpZHRoPScxODAnIGhlaWdodD0nNDgnIHJ4PScxMCcgZmlsbD0nI2ZmZmZmZicvPgogIDxyZWN0IHg9JzQnIHk9JzQnIHdpZHRoPScxNzInIGhlaWdodD0nNDAnIHJ4PSc4JyBmaWxsPScjZDAwJyBvcGFjaXR5PScwLjA4Jy8+CiAgPHRleHQgeD0nMTQnIHk9JzMwJyBmb250LXNpemU9JzIwJyBmaWxsPScjMTExJyBmb250LWZhbWlseT0nQXJpYWwgQmxhY2ssIEFyaWFsJz5ESU5BTUlUQTwvdGV4dD4KICA8dGV4dCB4PScxMjAnIHk9JzMwJyBmb250LXNpemU9JzE2JyBmaWxsPScjZDAwJyBmb250LWZhbWlseT0nQXJpYWwgQmxhY2ssIEFyaWFsJz5QT1M8L3RleHQ+Cjwvc3ZnPg==";</script>
-<script src="app.js?v=4.0"></script>
+
 <script>
 // drawer toggle
 document.addEventListener('DOMContentLoaded',()=>{
@@ -370,5 +343,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   backdrop.addEventListener('click',close);
 });
 </script>
+
+<script src="app.js?v=4.3" defer></script>
 </body>
 </html>

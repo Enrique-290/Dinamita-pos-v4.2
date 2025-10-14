@@ -120,23 +120,3 @@ canvas{max-width:100%;height:280px}
   body.drawer-open .sidebar{transform:translateX(0)}
   body.drawer-open .backdrop{display:block}
 }
-
-
-/* Thumbnails in Sales */
-.prod-thumb{width:36px;height:36px;border-radius:6px;object-fit:cover;background:#eee;flex:0 0 36px}
-.thumb-sm{width:28px;height:28px;border-radius:6px}
-.thumb-md{width:48px;height:48px;border-radius:8px}
-
-/* Compras layout */
-.grid.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.grid.g2{display:grid;grid-template-columns:2fr 1fr;gap:10px}
-.table .row{display:grid;grid-template-columns:2fr 120px 150px 120px 160px 80px;gap:8px;align-items:center;border-bottom:1px solid var(--border);padding:6px 0}
-.mt{margin-top:10px}
-
-/* Print fixes */
-@media print{
-  @page{ size:58mm auto; margin:0; }
-  body{ -webkit-print-color-adjust: exact; print-color-adjust: exact; color:#000 !important; }
-  .ticket{ width:58mm; margin:0 auto; border:none; box-shadow:none; }
-  #ticketPreview, #ticketPreview *{ visibility: visible !important; color:#000 !important; background:#fff !important; }
-}
