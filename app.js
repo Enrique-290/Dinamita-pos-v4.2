@@ -59,6 +59,7 @@ const DB={
       ],
       customers:[{id:'C1',nombre:'Público General',tel:'',email:'',certificadoMedico:false,entrenaSolo:false}],
       memberships:[],
+      purchases:[],
       sales:[]
     };
   },
@@ -66,9 +67,10 @@ const DB={
     d=d||{};
     d.schemaVersion=SCHEMA_VERSION;
     d.settings = Object.assign({}, DEFAULT_SETTINGS, d.settings||{});
-    d.products=(d.products||[]).map(p=>({stock:0,costo:0,descr:'',img:'',categoria:'General',...p}));
+    d.products=(d.products||[]).map(p=>({stock:0,costo:0,descr:'',img:'',categoria:'General',altCode:'',...p}));
     d.customers=(d.customers||[]).map(c=>({certificadoMedico:false,entrenaSolo:false,...c}));
     d.memberships=d.memberships||[];
+    d.purchases=d.purchases||[];
     d.sales=(d.sales||[]).map(s=>({...s,subtotalCosto:s.subtotalCosto??(s.items||[]).reduce((a,i)=>a+(i.costo||0)*(i.qty||0),0)}));
     return d;
   }
@@ -102,7 +104,7 @@ const UI={
     document.querySelectorAll('.menu button').forEach(b=>b.onclick=()=>{
       document.querySelectorAll('.menu button').forEach(x=>x.classList.remove('active'));
       b.classList.add('active');
-      UI.show(b.dataset.view);
+      location.hash = b.dataset.view;
       document.getElementById('viewTitle').textContent=b.textContent;
     });
     document.getElementById('backupBtn').onclick=Backup.export;
@@ -123,10 +125,19 @@ const UI={
     UI.show('dashboard');
   },
   show(id){
+    if(!id) id=(location.hash||'#dashboard').replace('#','');
     document.querySelectorAll('.view').forEach(v=>v.classList.add('hidden'));
     document.getElementById('view-'+id).classList.remove('hidden');
     if(id==='dashboard'){Dashboard.render();}
     if(id==='reportes'){Reportes.renderAll();}
+
+    if(id==='ventas'){ 
+      const vc=document.getElementById('ventaCliente'); if(vc) vc.value='C1';
+      const vq=document.getElementById('ventaClienteSearch'); if(vq) vq.value='Público General';
+      if(Ventas.carrito){ Ventas.carrito=[]; Ventas.renderCarrito(); }
+      if(Ventas.changeTipo) Ventas.changeTipo();
+    }
+    if(id==='compras' && typeof Compras!=='undefined'){ Compras.init(); }
   }
 };
 
@@ -162,12 +173,12 @@ const Dashboard={
     const fin=document.getElementById('dashFin').value||'9999-12-31';
     return state.sales.filter(s=>{
       const f=s.fecha.slice(0,10);
-      return f>=ini && f<=fin;
+      return f>=ini && f<=fin && !s.cancelada;
     });
   },
   render(){
     const today=new Date().toISOString().slice(0,10);
-    const ventasHoy=state.sales.filter(s=>s.fecha.slice(0,10)===today);
+    const ventasHoy=state.sales.filter(s=>s.fecha.slice(0,10)===today && !s.cancelada);
     const totalHoy=ventasHoy.reduce((a,s)=>a+s.total,0);
     const utilidad=ventasHoy.reduce((a,s)=>a+((s.total-s.iva)-(s.subtotalCosto||0)),0);
     document.getElementById('kpiVentasHoy').textContent=money(totalHoy);
@@ -323,7 +334,8 @@ const Ventas={
     const nombre = 'Membresía '+tipo;
     const e=Ventas.carrito.find(x=>x._isService && x.nombre===nombre);
     if(e){ alert('Ya agregaste esta membresía.'); return; }
-    Ventas.carrito.push({_isService:true,nombre,precio: tinfo.precio, qty:1, mem:{tipo,inicio,fin}});
+    const notas = document.getElementById('vMemNotas')?.value||'';
+    Ventas.carrito.push({_isService:true,nombre,precio: tinfo.precio, qty:1, mem:{tipo,inicio,fin,notas}});
     Ventas.renderCarrito();
   },
   fillTiposMembresia(){
@@ -414,7 +426,7 @@ const Inventario={
     const sku=document.getElementById('prodSku').value.trim();
     const nombre=document.getElementById('prodNombre').value.trim();
     if(!sku||!nombre){alert('SKU y Nombre obligatorios.');return;}
-    const p={sku,nombre,categoria:document.getElementById('prodCategoria').value.trim()||'General',precio:parseFloat(document.getElementById('prodPrecio').value||'0'),costo:parseFloat(document.getElementById('prodCosto').value||'0'),stock:parseInt(document.getElementById('prodStock').value||'0',10),img:this.imgData||'',descr:document.getElementById('prodDescr').value.trim()};
+    const p={sku,nombre,categoria:document.getElementById('prodCategoria').value.trim()||'General',precio:parseFloat(document.getElementById('prodPrecio').value||'0'),costo:parseFloat(document.getElementById('prodCosto').value||'0'),stock:parseInt(document.getElementById('prodStock').value||'0',10),img:this.imgData||'',descr:document.getElementById('prodDescr').value.trim(),altCode:document.getElementById('prodAltCode')?.value.trim()||''};
     let ex=state.products.find(x=>x.sku===sku); if(ex)Object.assign(ex,p); else state.products.unshift(p);
     DB.save(state); this.renderTabla(); alert('Producto guardado.');
   },
@@ -440,6 +452,7 @@ const Inventario={
     document.getElementById('prodCosto').value=p.costo||0;
     document.getElementById('prodStock').value=p.stock;
     document.getElementById('prodDescr').value=p.descr||'';
+    const ac=document.getElementById('prodAltCode'); if(ac) ac.value=p.altCode||'';
     window.scrollTo({top:0,behavior:'smooth'});
   },
   del(sku){if(!confirm('¿Eliminar producto?'))return; state.products=state.products.filter(x=>x.sku!==sku); DB.save(state); this.renderTabla();},
@@ -495,6 +508,62 @@ const Clientes={
 
 const Membresias={
   init(){ this.fillClientes(); this.fillTipos(); },
+
+  manageTipos(){
+    const m=document.getElementById('modalTipos');
+    Membresias.renderTipos();
+    m.classList.remove('hidden'); m.setAttribute('aria-hidden','false');
+    const escFn=e=>{if(e.key==='Escape'){Membresias.closeTipos();document.removeEventListener('keydown',escFn);}};
+    document.addEventListener('keydown',escFn);
+  },
+  closeTipos(){const m=document.getElementById('modalTipos'); m.classList.add('hidden'); m.setAttribute('aria-hidden','true');},
+  renderTipos(){
+    const cont=document.getElementById('tiposList');
+    const t=state.settings.tiposMembresia||[];
+    if(!cont) return;
+    cont.innerHTML = t.map((x,i)=>`
+      <div class="row" style="display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;align-items:center">
+        <div>${esc(x.nombre)}</div>
+        <div>${x.dias||0} días</div>
+        <div>${money(x.precio||0)}</div>
+        <div><button class="btn small danger" onclick="Membresias.delTipo(${i})">🗑️</button></div>
+      </div>`).join('') || '<em>Sin tipos aún</em>';
+  },
+  addTipo(){
+    const nombre=(document.getElementById('tipoNombre').value||'').trim();
+    const dias=parseInt(document.getElementById('tipoDias').value||'0',10);
+    const precio=parseFloat(document.getElementById('tipoPrecio').value||'0');
+    if(!nombre){alert('Nombre requerido');return;}
+    (state.settings.tiposMembresia=state.settings.tiposMembresia||[]).push({nombre,dias:isNaN(dias)?0:dias,precio:isNaN(precio)?0:precio});
+    DB.save(state); Membresias.renderTipos(); Membresias.fillTipos(); Ventas.fillTiposMembresia();
+    document.getElementById('tipoNombre').value=''; document.getElementById('tipoDias').value=''; document.getElementById('tipoPrecio').value='';
+  },
+  delTipo(i){
+    (state.settings.tiposMembresia||[]).splice(i,1);
+    DB.save(state); Membresias.renderTipos(); Membresias.fillTipos(); Ventas.fillTiposMembresia();
+  },
+  cobrarAqui(){
+    // Registra y cobra en un solo paso desde la sección Membresías
+    const cliente=document.getElementById('memClienteId').value;
+    if(!cliente || cliente==='C1'){ alert('Selecciona un cliente válido'); return; }
+    const tipo=document.getElementById('memTipo').value;
+    const inicio=document.getElementById('memInicio').value;
+    const fin=document.getElementById('memFin').value;
+    const tinfo=(state.settings.tiposMembresia||[]).find(t=>t.nombre===tipo)||{precio:0};
+    // Genera venta directa
+    const folio='T'+Date.now().toString().slice(-8);
+    const item={sku:'SERV-MEM', nombre:'Membresía '+tipo, precio:tinfo.precio, qty:1, _isService:true, mem:{tipo,inicio,fin}};
+    const subtotal=item.precio, iva=subtotal*(state.settings.iva||0)/100, total=subtotal+iva;
+    const venta={folio,fecha:new Date().toISOString(),items:[item],subtotal,iva,total,cliente,notas:state.settings.mensaje||''};
+    venta.subtotalCosto=0; venta.ganancia=(venta.total-venta.iva);
+    state.sales.unshift(venta);
+    // Registra membresía
+    const id='M'+Date.now().toString(36);
+    state.memberships.unshift({id,cliente,tipo,inicio,fin,notas:'(Cobrado en Membresías)'});
+    DB.save(state);
+    Historial.renderTabla(); Tickets.render(venta); UI.show('ticket');
+  },
+
   fillClientes(){
     document.getElementById('memClienteSearch').value='';
     document.getElementById('memClienteId').value='';
@@ -612,7 +681,112 @@ const Cafeteria={
   }
 };
 
+
+const Compras={
+  items:[],
+  init(){
+    const t=new Date().toISOString().slice(0,10);
+    const f=document.getElementById('compFecha'); if(f) f.value=t;
+    this.items=[];
+    this.renderTabla();
+    this.renderHist();
+  },
+  limpiar(){
+    ['compProv','compFolio','compBuscar'].forEach(id=>{const el=document.getElementById(id); if(el) el.value='';});
+    this.items=[]; this.renderTabla();
+  },
+  buscarProducto(term){
+    term=(term||'').toLowerCase();
+    const res=state.products.filter(p=> (p.nombre||'').toLowerCase().includes(term) || (p.sku||'').toLowerCase().includes(term) || (p.altCode||'').toLowerCase().includes(term)).slice(0,40);
+    const cont=document.getElementById('compResultados'); if(!cont) return;
+    const ph='data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80"><rect width="100%" height="100%" fill="%23f4f4f4"/></svg>';
+    cont.innerHTML = res.map(p=>{
+      const img=p.img||'';
+      return `<div class="list-item">
+        <img class="thumb" src="${img}" onerror="this.src='${ph}'">
+        <div style="flex:1"><div><strong>${esc(p.nombre)}</strong> <small>(${esc(p.sku)})</small></div><div class="sub">Stock: ${p.stock} • Costo: ${money(p.costo||0)}</div></div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <input type="number" min="1" step="1" value="1" style="width:72px" data-sku="${p.sku}" class="compQty">
+          <input type="number" min="0" step="0.01" value="${p.costo||0}" style="width:92px" data-sku="${p.sku}" class="compCost">
+          <button class="btn small" onclick="Compras.add('${p.sku}')">➕</button>
+        </div>
+      </div>`;
+    }).join('') || '<div class="list-item">Sin resultados</div>';
+  },
+  add(sku){
+    const qtyEl=document.querySelector(`.compQty[data-sku="${sku}"]`);
+    const costEl=document.querySelector(`.compCost[data-sku="${sku}"]`);
+    const qty=parseInt(qtyEl?.value||'1',10);
+    const cost=parseFloat(costEl?.value||'0');
+    const p=state.products.find(x=>x.sku===sku);
+    if(!p) return;
+    const existing=this.items.find(x=>x.sku===sku);
+    if(existing){ existing.qty+=qty; existing.costo=cost; } else { this.items.push({sku, nombre:p.nombre, qty, costo:cost}); }
+    this.renderTabla();
+  },
+  del(i){ this.items.splice(i,1); this.renderTabla(); },
+  renderTabla(){
+    const cont=document.getElementById('compTabla'); if(!cont) return;
+    const body=this.items.map((it,i)=>`<tr><td>${esc(it.sku)}</td><td>${esc(it.nombre)}</td><td>${it.qty}</td><td>${money(it.costo)}</td><td>${money((it.qty||0)*(it.costo||0))}</td><td><button class="btn small danger" onclick="Compras.del(${i})">🗑️</button></td></tr>`).join('');
+    const total=this.items.reduce((a,i)=>a+(i.qty||0)*(i.costo||0),0);
+    const empty = '<tr><td colspan="6">Sin items</td></tr>';
+    cont.innerHTML = `<table><thead><tr><th>SKU</th><th>Producto</th><th>Cantidad</th><th>Costo</th><th>Importe</th><th></th></tr></thead><tbody>${body or empty}</tbody><tfoot><tr><td colspan="4" style="text-align:right"><strong>Total</strong></td><td>${money(total)}</td><td></td></tr></tfoot></table>`;
+  },
+  guardar(){
+    if(this.items.length===0){ alert('Agrega productos a la compra.'); return; }
+    const fecha=document.getElementById('compFecha').value||new Date().toISOString().slice(0,10);
+    const proveedor=document.getElementById('compProv').value||'';
+    const folio=document.getElementById('compFolio').value||('OC-'+Date.now().toString().slice(-6));
+    const promedio=document.getElementById('compPromedio')?.checked;
+    // Update stock and cost
+    this.items.forEach(it=>{
+      const p=state.products.find(x=>x.sku===it.sku);
+      if(!p) return;
+      if(promedio){
+        const oldStock=p.stock||0, oldCost=p.costo||0;
+        const newStock=oldStock + it.qty;
+        const newCost = newStock>0 ? ((oldStock*oldCost) + (it.qty*it.costo)) / newStock : it.costo;
+        p.costo = newCost;
+        p.stock = newStock;
+      }else{
+        p.stock = (p.stock||0) + it.qty;
+        if(it.costo>0) p.costo = it.costo;
+      }
+    });
+    const compra={id:'OC'+Date.now().toString(36), fecha, proveedor, folio, items: this.items.map(x=>({...x})), total: this.items.reduce((a,i)=>a+i.qty*i.costo,0)};
+    state.purchases = state.purchases || [];
+    state.purchases.unshift(compra);
+    DB.save(state);
+    this.items=[];
+    this.renderTabla();
+    this.renderHist();
+    Inventario.renderTabla();
+    Dashboard.render();
+    alert('Compra guardada.');
+  },
+  renderHist(){
+    const ini=(document.getElementById('compHistIni')?.value||'0000-01-01');
+    const fin=(document.getElementById('compHistFin')?.value||'9999-12-31');
+    const rows=(state.purchases||[]).filter(c=> (c.fecha||'').slice(0,10)>=ini && (c.fecha||'').slice(0,10)<=fin).map(c=>{
+      const items = (c.items||[]).map(i=>`${i.sku} x${i.qty} @ ${money(i.costo)}`).join('; ');
+      return `<tr><td>${esc(c.folio)}</td><td>${esc(c.fecha)}</td><td>${esc(c.proveedor||'')}</td><td>${esc(items)}</td><td>${money(c.total||0)}</td></tr>`;
+    }).join('');
+    const cont=document.getElementById('compHistTabla'); if(cont) cont.innerHTML = `<table><thead><tr><th>Folio</th><th>Fecha</th><th>Proveedor</th><th>Detalle</th><th>Total</th></tr></thead><tbody>${rows or '<tr><td colspan="5">Sin compras</td></tr>'}</tbody></table>`;
+  },
+  exportCSV(){
+    const rows=[['Folio','Fecha','Proveedor','Detalle','Total']].concat((state.purchases||[]).map(c=>[c.folio,c.fecha,c.proveedor,(c.items||[]).map(i=>`${i.sku} x${i.qty} @ ${i.costo}`).join('; '),c.total]));
+    downloadCSV('compras.csv', rows);
+  }
+};
+
+
 const Historial={
+  cancel(folio){
+    const s=state.sales.find(x=>x.folio===folio); if(!s || s.cancelada) return;
+    if(!confirm('¿Cancelar esta venta? Se repondrá el stock de productos.')) return;
+    s.items.forEach(i=>{ if(!i._isService){ const p=state.products.find(x=>x.sku===i.sku); if(p) p.stock += i.qty; }});
+    s.cancelada=true; DB.save(state); Historial.renderTabla(); Dashboard.render(); Inventario.renderTabla();
+  },
   openFiltros(){
     const m=document.getElementById('modalFiltros'); m.classList.remove('hidden'); m.setAttribute('aria-hidden','false');
     const escFn=e=>{if(e.key==='Escape'){Historial.closeFiltros();document.removeEventListener('keydown',escFn);}};
@@ -640,12 +814,12 @@ const Historial={
     }).map(s=>{
       const cli=state.customers.find(c=>c.id===s.cliente)?.nombre||'';
       const itemsStr=s.items.map(i=>`${i.nombre} x${i.qty}`).join(', ');
-      return `<tr><td>${esc(s.folio)}</td><td>${s.fecha.slice(0,16).replace('T',' ')}</td><td>${esc(cli)}</td><td>${esc(itemsStr)}</td><td>${money(s.total)}</td><td><button class='btn small' onclick=\"Tickets.renderByFolio('${s.folio}')\">🖨️ Reimprimir</button></td></tr>`;
+      return `<tr><td>${esc(s.folio)}</td><td>${s.fecha.slice(0,16).replace('T',' ')}</td><td>${esc(cli)}</td><td>${esc(itemsStr)}</td><td>${money(s.total)}</td><td>${s.cancelada?'<span class=\'badge bad\'>Cancelada</span>':''}</td><td><button class='btn small' onclick=\"Tickets.renderByFolio('${s.folio}')\">🖨️ Reimprimir</button> ${s.cancelada?'':`<button class='btn small danger' onclick=\"Historial.cancel('${s.folio}')\">❌ Cancelar</button>`}</td></tr>`;
     }).join('');
-    document.getElementById('histTabla').innerHTML=`<table><thead><tr><th>Folio</th><th>Fecha</th><th>Cliente</th><th>Items</th><th>Total</th><th></th></tr></thead><tbody>${rows||'<tr><td colspan="6">Sin ventas</td></tr>'}</tbody></table>`;
+    document.getElementById('histTabla').innerHTML=`<table><thead><tr><th>Folio</th><th>Fecha</th><th>Cliente</th><th>Items</th><th>Total</th><th>Estado</th><th></th></tr></thead><tbody>${rows||'<tr><td colspan="6">Sin ventas</td></tr>'}</tbody></table>`;
   },
   exportCSV(){
-    const rows=[['Folio','Fecha','Cliente','Items','Total','IVA','Costo','Ganancia']].concat(state.sales.map(s=>[s.folio,s.fecha,(state.customers.find(c=>c.id===s.cliente)?.nombre||''),s.items.map(i=>`${i.nombre} x${i.qty}`).join('; '),s.total,s.iva,(s.subtotalCosto||0),((s.total-s.iva)-(s.subtotalCosto||0))]));
+    const rows=[['Folio','Fecha','Cliente','Items','Total','IVA','Costo','Ganancia','Estado']].concat(state.sales.map(s=>[s.folio,s.fecha,(state.customers.find(c=>c.id===s.cliente)?.nombre||''),s.items.map(i=>`${i.nombre} x${i.qty}`).join('; '),s.total,s.iva,(s.subtotalCosto||0),((s.total-s.iva)-(s.subtotalCosto||0)),s.cancelada?'Cancelada':'Vigente']));
     downloadCSV('historial_ventas.csv',rows);
   }
 };
@@ -666,7 +840,7 @@ const Reportes={
   renderVentas(){
     const ini=document.getElementById('repVenIni').value||'0000-01-01';
     const fin=document.getElementById('repVenFin').value||'9999-12-31';
-    const rows=state.sales.filter(s=>{const f=s.fecha.slice(0,10); return f>=ini && f<=fin;});
+    const rows=state.sales.filter(s=>{const f=s.fecha.slice(0,10); return f>=ini && f<=fin && !s.cancelada;});
     const total=rows.reduce((a,s)=>a+s.total,0);
     const gan=rows.reduce((a,s)=>a+((s.total-s.iva)-(s.subtotalCosto||0)),0);
     document.getElementById('repVenKpi').innerHTML = `
@@ -684,7 +858,7 @@ const Reportes={
     const ini=document.getElementById('repVenIni').value||'0000-01-01';
     const fin=document.getElementById('repVenFin').value||'9999-12-31';
     const rows=[['Folio','Fecha','Cliente','Items','Total']]
-      .concat(state.sales.filter(s=>{const f=s.fecha.slice(0,10); return f>=ini && f<=fin;}).map(s=>[s.folio,s.fecha,(state.customers.find(c=>c.id===s.cliente)?.nombre||''),s.items.map(i=>`${i.nombre} x${i.qty}`).join('; '),s.total]));
+      .concat(state.sales.filter(s=>{const f=s.fecha.slice(0,10); return f>=ini && f<=fin && !s.cancelada;}).map(s=>[s.folio,s.fecha,(state.customers.find(c=>c.id===s.cliente)?.nombre||''),s.items.map(i=>`${i.nombre} x${i.qty}`).join('; '),s.total]));
     downloadCSV('reporte_ventas.csv', rows);
   },
   renderMembresias(){
@@ -802,6 +976,10 @@ const Tickets={
       const name=truncate(i.nombre,18);
       const right=`x${i.qty} ${money(i.precio)}`;
       lines.push(padRight(name,22)+padLeft(right,10));
+      if(i._isService && i.mem){
+        lines.push('  Vigencia: '+(i.mem.inicio||'')+' a '+(i.mem.fin||''));
+        if(i.mem.notas) lines.push('  Nota: '+truncate(i.mem.notas,28));
+      }
     }
     lines.push(repeat('-',32));
     lines.push(padRight('SUBTOTAL',20)+padLeft(money(v.subtotal),12));
@@ -823,38 +1001,5 @@ function downloadCSV(filename,rows){
   setTimeout(()=>URL.revokeObjectURL(a.href),1500);
 }
 
-window.addEventListener('DOMContentLoaded',UI.init);
-
-
-/* === Navegación segura por hash (base limpia) === */
-(function(){
-  function qsa(sel){return Array.prototype.slice.call(document.querySelectorAll(sel));}
-  function showByHash(){
-    var hash = (location.hash||'').replace('#','').trim();
-    if(!hash) return; // no cambia nada si no hay hash
-    var pages = qsa('[data-page],[data-view],section.page');
-    if(!pages.length) return; // no interferir si no es SPA por secciones
-    pages.forEach(function(p){
-      p.classList.remove('active');
-      p.classList.add('hidden');
-    });
-    var el = document.getElementById(hash) || document.querySelector('[data-page="'+hash+'"],[data-view="'+hash+'"]');
-    if(el){
-      el.classList.add('active');
-      el.classList.remove('hidden');
-    }
-  }
-  window.addEventListener('hashchange', showByHash);
-  document.addEventListener('DOMContentLoaded', function(){
-    // No tocar si el sistema ya controla las vistas
-    try{ if(typeof UI!=='undefined' && typeof UI.show==='function'){ return; } }catch(e){}
-    showByHash();
-    // Delegación: enlaces internos con #id
-    document.addEventListener('click', function(e){
-      var a = e.target.closest('a[href^="#"]');
-      if(!a) return;
-      // dejamos que el hash cambie y el handler muestre la vista
-      setTimeout(showByHash,0);
-    });
-  });
-})();
+window.addEventListener('DOMContentLoaded',()=>{UI.init(); const target=(location.hash||'#dashboard').replace('#',''); UI.show(target);});
+window.addEventListener('hashchange',()=>UI.show((location.hash||'#dashboard').replace('#','')));

@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <link rel="stylesheet" href="styles.css?v=4.2-base"/>
+  <link rel="stylesheet" href="styles.css?v=4.2"/>
 </head>
 <body>
 <div id="app">
@@ -15,12 +15,13 @@
     <div class="brand">
       <img id="brandLogo" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScxODAnIGhlaWdodD0nNDgnIHZpZXdCb3g9JzAgMCAxODAgNDgnPgogIDxyZWN0IHdpZHRoPScxODAnIGhlaWdodD0nNDgnIHJ4PScxMCcgZmlsbD0nI2ZmZmZmZicvPgogIDxyZWN0IHg9JzQnIHk9JzQnIHdpZHRoPScxNzInIGhlaWdodD0nNDAnIHJ4PSc4JyBmaWxsPScjZDAwJyBvcGFjaXR5PScwLjA4Jy8+CiAgPHRleHQgeD0nMTQnIHk9JzMwJyBmb250LXNpemU9JzIwJyBmaWxsPScjMTExJyBmb250LWZhbWlseT0nQXJpYWwgQmxhY2ssIEFyaWFsJz5ESU5BTUlUQTwvdGV4dD4KICA8dGV4dCB4PScxMjAnIHk9JzMwJyBmb250LXNpemU9JzE2JyBmaWxsPScjZDAwJyBmb250LWZhbWlseT0nQXJpYWwgQmxhY2ssIEFyaWFsJz5QT1M8L3RleHQ+Cjwvc3ZnPg==" />
       <div class="brand-title">DINAMITA POS</div>
-      <small class="brand-sub">v4.2-base • 2025-10-08 18:56</small>
+      <small class="brand-sub">v4.2 • 2025-10-14 16:28</small>
     </div>
     <nav class="menu">
       <button data-view="dashboard" class="active">🏠 Dashboard</button>
       <button data-view="ventas">🛒 Ventas</button>
       <button data-view="inventario">📦 Inventario</button>
+      <button data-view="compras">🧾 Compras</button>
       <button data-view="clientes">👤 Clientes</button>
       <button data-view="membresias">🎟️ Membresías</button>
       <button data-view="cafeteria">☕ Cafetería</button>
@@ -30,7 +31,7 @@
       <button data-view="ticket">🧾 Ticket 58mm</button>
     </nav>
     <div class="sidebar-footer">
-      <small>DINAMITA • v4.2-base</small>
+      <small>DINAMITA • v4.2</small>
     </div>
   </aside>
 
@@ -45,7 +46,7 @@
       <button id="restoreBtn" class="btn small outline">📥 Importar respaldo</button>
     </header>
 
-    <section id="view-dashboard" class="view">
+    <section id="view-dashboard" class="view page--dashboard">
       <div class="cards">
         <div class="card"><div class="card-title">💵 Ventas de hoy</div><div class="card-value" id="kpiVentasHoy">$0</div></div>
         <div class="card"><div class="card-title">🎫 Tickets emitidos</div><div class="card-value" id="kpiTickets">0</div></div>
@@ -70,7 +71,7 @@
       </div>
     </section>
 
-    <section id="view-ventas" class="view hidden">
+    <section id="view-ventas" class="view page--ventas hidden">
       <div class="panel">
         <div class="panel-title">🛍️ Nueva venta</div>
         <div class="grid-2">
@@ -112,7 +113,7 @@
 
         <div id="ventaMembresiaBox" class="hidden">
           <div class="grid-3">
-            <div><label>Tipo</label><select id="vMemTipo"></select></div>
+            <div><label>Tipo</label><div style="display:flex;gap:8px"><select id="vMemTipo"></select><button class="btn small outline" onclick="Membresias.manageTipos()">⚙️ Tipos</button></div></div>
             <div><label>Inicio</label><input id="vMemInicio" type="date"></div>
             <div><label>Fin</label><input id="vMemFin" type="date"></div>
             <div class="col-span-3"><label>Notas</label><input id="vMemNotas" placeholder="Notas de la membresía"></div>
@@ -129,11 +130,12 @@
       </div>
     </section>
 
-    <section id="view-inventario" class="view hidden">
+    <section id="view-inventario" class="view page--inventario hidden">
       <div class="panel">
         <div class="panel-title">📦 Inventario</div>
         <div class="grid-3">
           <div><label>SKU</label><input id="prodSku" placeholder="SKU-001"></div>
+          <div><label>Código alterno</label><input id="prodAltCode" placeholder="Código de barras / alterno"></div>
           <div><label>Nombre</label><input id="prodNombre" placeholder="Proteína Whey"></div>
           <div><label>Categoría</label><input id="prodCategoria" placeholder="Suplementos / Accesorios / Cafetería"></div>
           <div><label>Precio (MXN)</label><input id="prodPrecio" type="number" min="0" step="0.01"></div>
@@ -155,7 +157,7 @@
       </div>
     </section>
 
-    <section id="view-clientes" class="view hidden">
+    <section id="view-clientes" class="view page--clientes hidden">
       <div class="panel">
         <div class="panel-title">👤 Clientes</div>
         <div class="grid-3">
@@ -176,7 +178,7 @@
       </div>
     </section>
 
-    <section id="view-membresias" class="view hidden">
+    <section id="view-membresias" class="view page--membresias hidden">
       <div class="panel">
         <div class="panel-title">🎟️ Registrar Membresía</div>
         <div class="grid-3">
@@ -187,11 +189,11 @@
               <input id="memClienteId" type="hidden">
             </div>
           </div>
-          <div><label>Tipo</label><select id="memTipo" onchange="Membresias.changeTipo()"></select></div>
+          <div><label>Tipo</label><div style="display:flex;gap:8px"><select id="memTipo" onchange="Membresias.changeTipo()"></select><button class="btn small outline" onclick="Membresias.manageTipos()">⚙️ Tipos</button></div></div>
           <div><label>Inicio</label><input id="memInicio" type="date"></div>
           <div><label>Fin</label><input id="memFin" type="date"></div>
           <div><label>Notas</label><input id="memNotas"></div>
-          <div class="right"><button class="btn" onclick="Membresias.guardar()">💾 Guardar</button></div>
+          <div class="right"><button class="btn" onclick="Membresias.guardar()">💾 Guardar</button> <button class="btn outline" onclick="Membresias.cobrarAqui()">💰 Cobrar aquí</button></div>
         </div>
       </div>
       <div class="panel">
@@ -205,9 +207,46 @@
       </div>
     </section>
 
-    <section id="view-cafeteria" class="view hidden"><div class="panel"><div class="panel-title">☕ Cafetería</div><div id="cafGrid" class="catalog"></div></div></section>
+    <section id="view-cafeteria" class="view page--cafeteria hidden"><div class="panel"><div class="panel-title">☕ Cafetería</div><div id="cafGrid" class="catalog"></div></div></section>
 
-    <section id="view-historial" class="view hidden">
+
+    <section id="view-compras" class="view hidden page--compras">
+      <div class="panel">
+        <div class="panel-title">🧾 Nueva compra</div>
+        <div class="grid-3">
+          <div><label>Fecha</label><input id="compFecha" type="date"></div>
+          <div><label>Proveedor</label><input id="compProv" placeholder="Nombre o razón social"></div>
+          <div><label>Folio</label><input id="compFolio" placeholder="Ej: OC-00123"></div>
+          <div class="col-span-3"><label>Buscar producto</label><input id="compBuscar" placeholder="Nombre / SKU / Código" oninput="Compras.buscarProducto(this.value)"></div>
+          <div class="col-span-3">
+            <div id="compResultados" class="list"></div>
+          </div>
+          <div class="col-span-3">
+            <div class="table" id="compTabla"></div>
+          </div>
+          <div class="col-span-3">
+            <label><input type="checkbox" id="compPromedio" checked> Actualizar costo por promedio ponderado</label>
+          </div>
+          <div class="col-span-3 right">
+            <button class="btn" onclick="Compras.guardar()">💾 Guardar compra</button>
+            <button class="btn outline" onclick="Compras.limpiar()">🧹 Limpiar</button>
+          </div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-title">📚 Historial de compras</div>
+        <div class="filters">
+          <label>De <input type="date" id="compHistIni"></label>
+          <label>A <input type="date" id="compHistFin"></label>
+          <button class="btn small" onclick="Compras.renderHist()">Actualizar</button>
+          <button class="btn small" onclick="Compras.exportCSV()">📤 Exportar CSV</button>
+        </div>
+        <div class="table" id="compHistTabla"></div>
+      </div>
+    </section>
+    
+
+    <section id="view-historial" class="view page--historial hidden">
       <div class="panel">
         <div class="panel-title">📜 Historial de ventas</div>
         <div class="filters"><button class="btn small" onclick="Historial.openFiltros()">🔎 Filtros</button><button class="btn small" onclick="Historial.exportCSV()">📤 Exportar CSV</button></div>
@@ -215,7 +254,7 @@
       </div>
     </section>
 
-    <section id="view-reportes" class="view hidden">
+    <section id="view-reportes" class="view page--reportes hidden">
       <div class="panel">
         <div class="panel-title">📊 Reportes</div>
         <div class="tabs">
@@ -264,7 +303,7 @@
       </div>
     </section>
 
-    <section id="view-config" class="view hidden">
+    <section id="view-config" class="view page--config hidden">
       <div class="panel">
         <div class="panel-title">⚙️ Configuración</div>
         <div class="grid-3">
@@ -297,7 +336,7 @@
       </div>
     </section>
 
-    <section id="view-ticket" class="view hidden">
+    <section id="view-ticket" class="view page--ticket hidden">
       <div class="panel">
         <div class="panel-title">🧾 Vista previa de ticket 58mm</div>
         <div class="ticket" id="ticketPreview">
@@ -328,10 +367,30 @@
       </div>
     </div>
 
-  </main>
+  
+    <div id="modalTipos" class="modal hidden" aria-hidden="true">
+      <div class="modal-content">
+        <div class="modal-head">
+          <h3>⚙️ Tipos de membresía</h3>
+          <button class="icon-btn" onclick="Membresias.closeTipos()">✕</button>
+        </div>
+        <div id="tiposList" class="modal-grid"></div>
+        <div class="modal-grid" style="margin-top:12px">
+          <label>Nombre<input id="tipoNombre"></label>
+          <label>Días<input id="tipoDias" type="number" min="0"></label>
+          <label>Precio<input id="tipoPrecio" type="number" min="0" step="0.01"></label>
+        </div>
+        <div class="actions">
+          <button class="btn" onclick="Membresias.addTipo()">➕ Agregar</button>
+          <button class="btn outline" onclick="Membresias.closeTipos()">Cerrar</button>
+        </div>
+      </div>
+    </div>
+    
+</main>
 </div>
 <script>const DEFAULT_LOGO = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScxODAnIGhlaWdodD0nNDgnIHZpZXdCb3g9JzAgMCAxODAgNDgnPgogIDxyZWN0IHdpZHRoPScxODAnIGhlaWdodD0nNDgnIHJ4PScxMCcgZmlsbD0nI2ZmZmZmZicvPgogIDxyZWN0IHg9JzQnIHk9JzQnIHdpZHRoPScxNzInIGhlaWdodD0nNDAnIHJ4PSc4JyBmaWxsPScjZDAwJyBvcGFjaXR5PScwLjA4Jy8+CiAgPHRleHQgeD0nMTQnIHk9JzMwJyBmb250LXNpemU9JzIwJyBmaWxsPScjMTExJyBmb250LWZhbWlseT0nQXJpYWwgQmxhY2ssIEFyaWFsJz5ESU5BTUlUQTwvdGV4dD4KICA8dGV4dCB4PScxMjAnIHk9JzMwJyBmb250LXNpemU9JzE2JyBmaWxsPScjZDAwJyBmb250LWZhbWlseT0nQXJpYWwgQmxhY2ssIEFyaWFsJz5QT1M8L3RleHQ+Cjwvc3ZnPg==";</script>
-
+<script src="app.js?v=4.2"></script>
 <script>
 // drawer toggle
 document.addEventListener('DOMContentLoaded',()=>{
@@ -343,7 +402,5 @@ document.addEventListener('DOMContentLoaded',()=>{
   backdrop.addEventListener('click',close);
 });
 </script>
-
-<script src="app.js?v=4.2-base" defer></script>
 </body>
 </html>
