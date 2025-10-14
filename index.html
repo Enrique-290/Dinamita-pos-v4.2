@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <link rel="stylesheet" href="styles.css?v=4.2.1"/>
+  <link rel="stylesheet" href="styles.css?v=4.2.2"/>
 </head>
 <body>
 <div id="app">
@@ -15,7 +15,7 @@
     <div class="brand">
       <img id="brandLogo" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScxODAnIGhlaWdodD0nNDgnIHZpZXdCb3g9JzAgMCAxODAgNDgnPgogIDxyZWN0IHdpZHRoPScxODAnIGhlaWdodD0nNDgnIHJ4PScxMCcgZmlsbD0nI2ZmZmZmZicvPgogIDxyZWN0IHg9JzQnIHk9JzQnIHdpZHRoPScxNzInIGhlaWdodD0nNDAnIHJ4PSc4JyBmaWxsPScjZDAwJyBvcGFjaXR5PScwLjA4Jy8+CiAgPHRleHQgeD0nMTQnIHk9JzMwJyBmb250LXNpemU9JzIwJyBmaWxsPScjMTExJyBmb250LWZhbWlseT0nQXJpYWwgQmxhY2ssIEFyaWFsJz5ESU5BTUlUQTwvdGV4dD4KICA8dGV4dCB4PScxMjAnIHk9JzMwJyBmb250LXNpemU9JzE2JyBmaWxsPScjZDAwJyBmb250LWZhbWlseT0nQXJpYWwgQmxhY2ssIEFyaWFsJz5QT1M8L3RleHQ+Cjwvc3ZnPg==" />
       <div class="brand-title">DINAMITA POS</div>
-      <small class="brand-sub">v4.2.1 • 2025-10-14 17:38</small>
+      <small class="brand-sub">v4.2.2 • 2025-10-14 20:02</small>
     </div>
     <nav class="menu">
       <button data-view="dashboard" class="active">🏠 Dashboard</button>
@@ -31,7 +31,7 @@
       <button data-view="ticket">🧾 Ticket 58mm</button>
     </nav>
     <div class="sidebar-footer">
-      <small>DINAMITA • v4.2.1</small>
+      <small>DINAMITA • v4.0</small>
     </div>
   </aside>
 
@@ -208,6 +208,37 @@
 
     <section id="view-cafeteria" class="view hidden"><div class="panel"><div class="panel-title">☕ Cafetería</div><div id="cafGrid" class="catalog"></div></div></section>
 
+
+    <section id="view-compras" class="view hidden page--compras">
+      <div class="panel">
+        <div class="panel-title">🧾 Nueva compra</div>
+        <div class="grid-3">
+          <div><label>Fecha</label><input id="compFecha" type="date"></div>
+          <div><label>Proveedor</label><input id="compProv" placeholder="Nombre o razón social"></div>
+          <div><label>Folio</label><input id="compFolio" placeholder="Ej: OC-00123"></div>
+          <div class="col-span-3"><label>Buscar producto</label><input id="compBuscar" placeholder="Nombre / SKU / Código" oninput="Compras.buscarProducto(this.value)"></div>
+          <div class="col-span-3"><div id="compResultados" class="list"></div></div>
+          <div class="col-span-3"><div class="table" id="compTabla"></div></div>
+          <div class="col-span-3"><label><input type="checkbox" id="compPromedio" checked> Actualizar costo por promedio ponderado</label></div>
+          <div class="col-span-3 right">
+            <button class="btn" onclick="Compras.guardar()">💾 Guardar compra</button>
+            <button class="btn outline" onclick="Compras.limpiar()">🧹 Limpiar</button>
+          </div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-title">📚 Historial de compras</div>
+        <div class="filters">
+          <label>De <input type="date" id="compHistIni"></label>
+          <label>A <input type="date" id="compHistFin"></label>
+          <button class="btn small" onclick="Compras.renderHist()">Actualizar</button>
+          <button class="btn small" onclick="Compras.exportCSV()">📤 Exportar CSV</button>
+        </div>
+        <div class="table" id="compHistTabla"></div>
+      </div>
+    </section>
+    
+
     <section id="view-historial" class="view hidden">
       <div class="panel">
         <div class="panel-title">📜 Historial de ventas</div>
@@ -352,7 +383,7 @@
 </main>
 </div>
 <script>const DEFAULT_LOGO = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScxODAnIGhlaWdodD0nNDgnIHZpZXdCb3g9JzAgMCAxODAgNDgnPgogIDxyZWN0IHdpZHRoPScxODAnIGhlaWdodD0nNDgnIHJ4PScxMCcgZmlsbD0nI2ZmZmZmZicvPgogIDxyZWN0IHg9JzQnIHk9JzQnIHdpZHRoPScxNzInIGhlaWdodD0nNDAnIHJ4PSc4JyBmaWxsPScjZDAwJyBvcGFjaXR5PScwLjA4Jy8+CiAgPHRleHQgeD0nMTQnIHk9JzMwJyBmb250LXNpemU9JzIwJyBmaWxsPScjMTExJyBmb250LWZhbWlseT0nQXJpYWwgQmxhY2ssIEFyaWFsJz5ESU5BTUlUQTwvdGV4dD4KICA8dGV4dCB4PScxMjAnIHk9JzMwJyBmb250LXNpemU9JzE2JyBmaWxsPScjZDAwJyBmb250LWZhbWlseT0nQXJpYWwgQmxhY2ssIEFyaWFsJz5QT1M8L3RleHQ+Cjwvc3ZnPg==";</script>
-<script src="app.js?v=4.2.1"></script>
+<script src="app.js?v=4.2.2"></script>
 <script>
 // drawer toggle
 document.addEventListener('DOMContentLoaded',()=>{

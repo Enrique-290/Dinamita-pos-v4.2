@@ -59,6 +59,7 @@ const DB={
       ],
       customers:[{id:'C1',nombre:'Público General',tel:'',email:'',certificadoMedico:false,entrenaSolo:false}],
       memberships:[],
+      purchases:[],
       sales:[]
     };
   },
@@ -69,6 +70,7 @@ const DB={
     d.products=(d.products||[]).map(p=>({stock:0,costo:0,descr:'',img:'',categoria:'General',...p}));
     d.customers=(d.customers||[]).map(c=>({certificadoMedico:false,entrenaSolo:false,...c}));
     d.memberships=d.memberships||[];
+    d.purchases=d.purchases||[];
     d.sales=(d.sales||[]).map(s=>({...s,subtotalCosto:s.subtotalCosto??(s.items||[]).reduce((a,i)=>a+(i.costo||0)*(i.qty||0),0)}));
     return d;
   }
@@ -99,19 +101,13 @@ function setCssVars(){
 const UI={
   init(){
     setCssVars();
-    
-document.querySelectorAll('.menu button').forEach(b=>{
-  b.onclick=()=>{
-    document.querySelectorAll('.menu button').forEach(x=>x.classList.remove('active'));
-    b.classList.add('active');
-    // Navegación por hash
-    location.hash = b.dataset.view;
-    // Título
-    const h = document.getElementById('viewTitle');
-    if (h) h.textContent = b.textContent.trim();
-  };
-});
-document.getElementById('backupBtn').onclick=Backup.export;
+    document.querySelectorAll('.menu button').forEach(b=>b.onclick=()=>{
+      document.querySelectorAll('.menu button').forEach(x=>x.classList.remove('active'));
+      b.classList.add('active');
+      UI.show(b.dataset.view);
+      document.getElementById('viewTitle').textContent=b.textContent;
+    });
+    document.getElementById('backupBtn').onclick=Backup.export;
     document.getElementById('restoreBtn').onclick=()=>document.getElementById('restoreInput').click();
     document.getElementById('restoreInput').addEventListener('change',Backup.importFile);
 
@@ -674,6 +670,107 @@ const Cafeteria={
   }
 };
 
+
+const Compras={
+  items:[],
+  init(){
+    const t=new Date().toISOString().slice(0,10);
+    const f=document.getElementById('compFecha'); if(f) f.value=t;
+    this.items=[];
+    this.renderTabla();
+    this.renderHist();
+    this.buscarProducto(document.getElementById('compBuscar')?.value||'');
+  },
+  limpiar(){
+    ['compProv','compFolio','compBuscar'].forEach(id=>{const el=document.getElementById(id); if(el) el.value='';});
+    this.items=[]; this.renderTabla();
+    const f=document.getElementById('compFecha'); if(f) f.value=new Date().toISOString().slice(0,10);
+    this.buscarProducto('');
+  },
+  buscarProducto(term){
+    term=(term||'').toLowerCase();
+    const res=(state.products||[]).filter(p=> (p.nombre||'').toLowerCase().includes(term) || (p.sku||'').toLowerCase().includes(term) || (p.altCode||'').toLowerCase().includes(term)).slice(0,40);
+    const cont=document.getElementById('compResultados'); if(!cont) return;
+    const ph='data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80"><rect width="100%" height="100%" fill="%23f4f4f4"/></svg>';
+    cont.innerHTML = res.map(p=>{
+      const img=p.img||'';
+      return `<div class="list-item">
+        <img class="thumb" src="${img}" onerror="this.src='${ph}'">
+        <div style="flex:1"><div><strong>${esc(p.nombre)}</strong> <small>(${esc(p.sku)})</small></div><div class="sub">Stock: ${p.stock} • Costo: ${money(p.costo||0)}</div></div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <input type="number" min="1" step="1" value="1" style="width:72px" data-sku="${p.sku}" class="compQty">
+          <input type="number" min="0" step="0.01" value="${p.costo||0}" style="width:92px" data-sku="${p.sku}" class="compCost">
+          <button class="btn small" onclick="Compras.add('${p.sku}')">➕</button>
+        </div>
+      </div>`;
+    }).join('') || '<div class="list-item">Sin resultados</div>';
+  },
+  add(sku){
+    const qtyEl=document.querySelector(`.compQty[data-sku="${sku}"]`);
+    const costEl=document.querySelector(`.compCost[data-sku="${sku}"]`);
+    const qty=parseInt(qtyEl?.value||'1',10);
+    const cost=parseFloat(costEl?.value||'0');
+    const p=state.products.find(x=>x.sku===sku);
+    if(!p) return;
+    const existing=this.items.find(x=>x.sku===sku);
+    if(existing){ existing.qty+=qty; existing.costo=cost; } else { this.items.push({sku, nombre:p.nombre, qty, costo:cost}); }
+    this.renderTabla();
+  },
+  del(i){ this.items.splice(i,1); this.renderTabla(); },
+  renderTabla(){
+    const cont=document.getElementById('compTabla'); if(!cont) return;
+    const body=this.items.map((it,i)=>`<tr><td>${esc(it.sku)}</td><td>${esc(it.nombre)}</td><td>${it.qty}</td><td>${money(it.costo)}</td><td>${money((it.qty||0)*(it.costo||0))}</td><td><button class="btn small danger" onclick="Compras.del(${i})">🗑️</button></td></tr>`).join('');
+    const total=this.items.reduce((a,i)=>a+(i.qty||0)*(i.costo||0),0);
+    const empty = '<tr><td colspan="6">Sin items</td></tr>';
+    cont.innerHTML = `<table><thead><tr><th>SKU</th><th>Producto</th><th>Cantidad</th><th>Costo</th><th>Importe</th><th></th></tr></thead><tbody>${body or empty}</tbody><tfoot><tr><td colspan="4" style="text-align:right"><strong>Total</strong></td><td>${money(total)}</td><td></td></tr></tfoot></table>`;
+  },
+  guardar(){
+    if(this.items.length===0){ alert('Agrega productos a la compra.'); return; }
+    const fecha=document.getElementById('compFecha').value||new Date().toISOString().slice(0,10);
+    const proveedor=document.getElementById('compProv').value||'';
+    const folio=document.getElementById('compFolio').value||('OC-'+Date.now().toString().slice(-6));
+    const promedio=document.getElementById('compPromedio')?.checked;
+    this.items.forEach(it=>{
+      const p=state.products.find(x=>x.sku===it.sku);
+      if(!p) return;
+      if(promedio){
+        const oldStock=p.stock||0, oldCost=p.costo||0;
+        const newStock=oldStock + it.qty;
+        const newCost = newStock>0 ? ((oldStock*oldCost) + (it.qty*it.costo)) / newStock : it.costo;
+        p.costo = newCost;
+        p.stock = newStock;
+      }else{
+        p.stock = (p.stock||0) + it.qty;
+        if(it.costo>0) p.costo = it.costo;
+      }
+    });
+    const compra={id:'OC'+Date.now().toString(36), fecha, proveedor, folio, items: this.items.map(x=>({...x})), total: this.items.reduce((a,i)=>a+i.qty*i.costo,0)};
+    state.purchases = state.purchases || [];
+    state.purchases.unshift(compra);
+    DB.save(state);
+    this.items=[];
+    this.renderTabla();
+    this.renderHist();
+    if(typeof Inventario!=='undefined') Inventario.renderTabla();
+    if(typeof Dashboard!=='undefined') Dashboard.render();
+    alert('Compra guardada.');
+  },
+  renderHist(){
+    const ini=(document.getElementById('compHistIni')?.value||'0000-01-01');
+    const fin=(document.getElementById('compHistFin')?.value||'9999-12-31');
+    const rows=(state.purchases||[]).filter(c=> (c.fecha||'').slice(0,10)>=ini && (c.fecha||'').slice(0,10)<=fin).map(c=>{
+      const items = (c.items||[]).map(i=>`${i.sku} x${i.qty} @ ${money(i.costo)}`).join('; ');
+      return `<tr><td>${esc(c.folio)}</td><td>${esc(c.fecha)}</td><td>${esc(c.proveedor||'')}</td><td>${esc(items)}</td><td>${money(c.total||0)}</td></tr>`;
+    }).join('');
+    const cont=document.getElementById('compHistTabla'); if(cont) cont.innerHTML = `<table><thead><tr><th>Folio</th><th>Fecha</th><th>Proveedor</th><th>Detalle</th><th>Total</th></tr></thead><tbody>${rows or '<tr><td colspan="5">Sin compras</td></tr>'}</tbody></table>`;
+  },
+  exportCSV(){
+    const rows=[['Folio','Fecha','Proveedor','Detalle','Total']].concat((state.purchases||[]).map(c=>[c.folio,c.fecha,c.proveedor,(c.items||[]).map(i=>`${i.sku} x${i.qty} @ ${i.costo}`).join('; '),c.total]));
+    downloadCSV('compras.csv', rows);
+  }
+};
+
+
 const Historial={
   openFiltros(){
     const m=document.getElementById('modalFiltros'); m.classList.remove('hidden'); m.setAttribute('aria-hidden','false');
@@ -889,43 +986,3 @@ function downloadCSV(filename,rows){
 }
 
 window.addEventListener('DOMContentLoaded',UI.init);
-
-
-UI.show = function(id){
-  if(!id) id = (location.hash || '#dashboard').replace('#','');
-  // Ocultar todo y mostrar vista
-  document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
-  const view = document.getElementById('view-'+id);
-  if (view) view.classList.remove('hidden');
-  // Activo en menú
-  document.querySelectorAll('.menu button').forEach(b=>{
-    b.classList.toggle('active', b.dataset.view === id);
-  });
-  // Título
-  const btn = document.querySelector(`.menu button[data-view="${id}"]`);
-  const titleEl = document.getElementById('viewTitle');
-  if (titleEl) titleEl.textContent = btn ? btn.textContent.trim() : (id || 'Dashboard');
-  // Cerrar drawer móvil
-  document.body.classList.remove('drawer-open');
-  // Hooks por página
-  if (id === 'dashboard' && typeof Dashboard !== 'undefined') Dashboard.render();
-  if (id === 'reportes'  && typeof Reportes  !== 'undefined') Reportes.renderAll();
-  if (id === 'ventas' && typeof Ventas !== 'undefined'){
-    const vc = document.getElementById('ventaCliente');        if (vc) vc.value = 'C1';
-    const vq = document.getElementById('ventaClienteSearch');  if (vq) vq.value = 'Público General';
-    if (Ventas.carrito){ Ventas.carrito = []; Ventas.renderCarrito(); }
-    if (Ventas.changeTipo) Ventas.changeTipo();
-  }
-  if (id === 'compras' && typeof Compras !== 'undefined'){
-    Compras.init();
-  }
-};
-
-window.addEventListener('DOMContentLoaded', ()=>{
-  UI.init();
-  const target = (location.hash || '#dashboard').replace('#','');
-  UI.show(target);
-});
-window.addEventListener('hashchange', ()=>{
-  UI.show((location.hash || '#dashboard').replace('#',''));
-});
