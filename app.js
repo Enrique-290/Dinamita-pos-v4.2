@@ -129,6 +129,7 @@ const UI={
     document.getElementById('view-'+id).classList.remove('hidden');
     if(id==='dashboard'){Dashboard.render();}
     if(id==='reportes'){Reportes.renderAll();}
+    if(id==='compras' && typeof Compras!=='undefined'){ Compras.init(); }
   }
 };
 
@@ -676,20 +677,15 @@ const Compras={
   init(){
     const t=new Date().toISOString().slice(0,10);
     const f=document.getElementById('compFecha'); if(f) f.value=t;
-    this.items=[];
-    this.renderTabla();
-    this.renderHist();
-    this.buscarProducto(document.getElementById('compBuscar')?.value||'');
+    this.items=[]; this.renderTabla(); this.renderHist();
   },
   limpiar(){
     ['compProv','compFolio','compBuscar'].forEach(id=>{const el=document.getElementById(id); if(el) el.value='';});
-    this.items=[]; this.renderTabla();
-    const f=document.getElementById('compFecha'); if(f) f.value=new Date().toISOString().slice(0,10);
-    this.buscarProducto('');
+    this.items=[]; this.renderTabla(); const r=document.getElementById('compResultados'); if(r) r.innerHTML='';
   },
   buscarProducto(term){
     term=(term||'').toLowerCase();
-    const res=(state.products||[]).filter(p=> (p.nombre||'').toLowerCase().includes(term) || (p.sku||'').toLowerCase().includes(term) || (p.altCode||'').toLowerCase().includes(term)).slice(0,40);
+    const res=state.products.filter(p=> (p.nombre||'').toLowerCase().includes(term) || (p.sku||'').toLowerCase().includes(term) || (p.altCode||'').toLowerCase().includes(term)).slice(0,40);
     const cont=document.getElementById('compResultados'); if(!cont) return;
     const ph='data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80"><rect width="100%" height="100%" fill="%23f4f4f4"/></svg>';
     cont.innerHTML = res.map(p=>{
@@ -721,7 +717,7 @@ const Compras={
     const cont=document.getElementById('compTabla'); if(!cont) return;
     const body=this.items.map((it,i)=>`<tr><td>${esc(it.sku)}</td><td>${esc(it.nombre)}</td><td>${it.qty}</td><td>${money(it.costo)}</td><td>${money((it.qty||0)*(it.costo||0))}</td><td><button class="btn small danger" onclick="Compras.del(${i})">🗑️</button></td></tr>`).join('');
     const total=this.items.reduce((a,i)=>a+(i.qty||0)*(i.costo||0),0);
-    const empty = '<tr><td colspan="6">Sin items</td></tr>';
+    const empty='<tr><td colspan="6">Sin items</td></tr>';
     cont.innerHTML = `<table><thead><tr><th>SKU</th><th>Producto</th><th>Cantidad</th><th>Costo</th><th>Importe</th><th></th></tr></thead><tbody>${body or empty}</tbody><tfoot><tr><td colspan="4" style="text-align:right"><strong>Total</strong></td><td>${money(total)}</td><td></td></tr></tfoot></table>`;
   },
   guardar(){
@@ -751,8 +747,8 @@ const Compras={
     this.items=[];
     this.renderTabla();
     this.renderHist();
-    if(typeof Inventario!=='undefined') Inventario.renderTabla();
-    if(typeof Dashboard!=='undefined') Dashboard.render();
+    if (typeof Inventario!=='undefined' && Inventario.renderTabla) Inventario.renderTabla();
+    if (typeof Dashboard!=='undefined' && Dashboard.render) Dashboard.render();
     alert('Compra guardada.');
   },
   renderHist(){
@@ -986,3 +982,12 @@ function downloadCSV(filename,rows){
 }
 
 window.addEventListener('DOMContentLoaded',UI.init);
+
+window.addEventListener('DOMContentLoaded', ()=>{
+  UI.init();
+  const target = (location.hash || '#dashboard').replace('#','');
+  UI.show(target);
+});
+window.addEventListener('hashchange', ()=>{
+  UI.show((location.hash || '#dashboard').replace('#',''));
+});
