@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <link rel="stylesheet" href="styles.css?v=4.2"/>
+  <link rel="stylesheet" href="styles.css?v=4.2.1"/>
 </head>
 <body>
 <div id="app">
@@ -15,7 +15,7 @@
     <div class="brand">
       <img id="brandLogo" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScxODAnIGhlaWdodD0nNDgnIHZpZXdCb3g9JzAgMCAxODAgNDgnPgogIDxyZWN0IHdpZHRoPScxODAnIGhlaWdodD0nNDgnIHJ4PScxMCcgZmlsbD0nI2ZmZmZmZicvPgogIDxyZWN0IHg9JzQnIHk9JzQnIHdpZHRoPScxNzInIGhlaWdodD0nNDAnIHJ4PSc4JyBmaWxsPScjZDAwJyBvcGFjaXR5PScwLjA4Jy8+CiAgPHRleHQgeD0nMTQnIHk9JzMwJyBmb250LXNpemU9JzIwJyBmaWxsPScjMTExJyBmb250LWZhbWlseT0nQXJpYWwgQmxhY2ssIEFyaWFsJz5ESU5BTUlUQTwvdGV4dD4KICA8dGV4dCB4PScxMjAnIHk9JzMwJyBmb250LXNpemU9JzE2JyBmaWxsPScjZDAwJyBmb250LWZhbWlseT0nQXJpYWwgQmxhY2ssIEFyaWFsJz5QT1M8L3RleHQ+Cjwvc3ZnPg==" />
       <div class="brand-title">DINAMITA POS</div>
-      <small class="brand-sub">v4.2 • 2025-10-14 16:28</small>
+      <small class="brand-sub">v4.2.1 • 2025-10-14 17:38</small>
     </div>
     <nav class="menu">
       <button data-view="dashboard" class="active">🏠 Dashboard</button>
@@ -31,7 +31,7 @@
       <button data-view="ticket">🧾 Ticket 58mm</button>
     </nav>
     <div class="sidebar-footer">
-      <small>DINAMITA • v4.2</small>
+      <small>DINAMITA • v4.2.1</small>
     </div>
   </aside>
 
@@ -46,7 +46,7 @@
       <button id="restoreBtn" class="btn small outline">📥 Importar respaldo</button>
     </header>
 
-    <section id="view-dashboard" class="view page--dashboard">
+    <section id="view-dashboard" class="view">
       <div class="cards">
         <div class="card"><div class="card-title">💵 Ventas de hoy</div><div class="card-value" id="kpiVentasHoy">$0</div></div>
         <div class="card"><div class="card-title">🎫 Tickets emitidos</div><div class="card-value" id="kpiTickets">0</div></div>
@@ -71,7 +71,7 @@
       </div>
     </section>
 
-    <section id="view-ventas" class="view page--ventas hidden">
+    <section id="view-ventas" class="view hidden">
       <div class="panel">
         <div class="panel-title">🛍️ Nueva venta</div>
         <div class="grid-2">
@@ -130,12 +130,11 @@
       </div>
     </section>
 
-    <section id="view-inventario" class="view page--inventario hidden">
+    <section id="view-inventario" class="view hidden">
       <div class="panel">
         <div class="panel-title">📦 Inventario</div>
         <div class="grid-3">
           <div><label>SKU</label><input id="prodSku" placeholder="SKU-001"></div>
-          <div><label>Código alterno</label><input id="prodAltCode" placeholder="Código de barras / alterno"></div>
           <div><label>Nombre</label><input id="prodNombre" placeholder="Proteína Whey"></div>
           <div><label>Categoría</label><input id="prodCategoria" placeholder="Suplementos / Accesorios / Cafetería"></div>
           <div><label>Precio (MXN)</label><input id="prodPrecio" type="number" min="0" step="0.01"></div>
@@ -157,7 +156,7 @@
       </div>
     </section>
 
-    <section id="view-clientes" class="view page--clientes hidden">
+    <section id="view-clientes" class="view hidden">
       <div class="panel">
         <div class="panel-title">👤 Clientes</div>
         <div class="grid-3">
@@ -178,7 +177,7 @@
       </div>
     </section>
 
-    <section id="view-membresias" class="view page--membresias hidden">
+    <section id="view-membresias" class="view hidden">
       <div class="panel">
         <div class="panel-title">🎟️ Registrar Membresía</div>
         <div class="grid-3">
@@ -207,46 +206,9 @@
       </div>
     </section>
 
-    <section id="view-cafeteria" class="view page--cafeteria hidden"><div class="panel"><div class="panel-title">☕ Cafetería</div><div id="cafGrid" class="catalog"></div></div></section>
+    <section id="view-cafeteria" class="view hidden"><div class="panel"><div class="panel-title">☕ Cafetería</div><div id="cafGrid" class="catalog"></div></div></section>
 
-
-    <section id="view-compras" class="view hidden page--compras">
-      <div class="panel">
-        <div class="panel-title">🧾 Nueva compra</div>
-        <div class="grid-3">
-          <div><label>Fecha</label><input id="compFecha" type="date"></div>
-          <div><label>Proveedor</label><input id="compProv" placeholder="Nombre o razón social"></div>
-          <div><label>Folio</label><input id="compFolio" placeholder="Ej: OC-00123"></div>
-          <div class="col-span-3"><label>Buscar producto</label><input id="compBuscar" placeholder="Nombre / SKU / Código" oninput="Compras.buscarProducto(this.value)"></div>
-          <div class="col-span-3">
-            <div id="compResultados" class="list"></div>
-          </div>
-          <div class="col-span-3">
-            <div class="table" id="compTabla"></div>
-          </div>
-          <div class="col-span-3">
-            <label><input type="checkbox" id="compPromedio" checked> Actualizar costo por promedio ponderado</label>
-          </div>
-          <div class="col-span-3 right">
-            <button class="btn" onclick="Compras.guardar()">💾 Guardar compra</button>
-            <button class="btn outline" onclick="Compras.limpiar()">🧹 Limpiar</button>
-          </div>
-        </div>
-      </div>
-      <div class="panel">
-        <div class="panel-title">📚 Historial de compras</div>
-        <div class="filters">
-          <label>De <input type="date" id="compHistIni"></label>
-          <label>A <input type="date" id="compHistFin"></label>
-          <button class="btn small" onclick="Compras.renderHist()">Actualizar</button>
-          <button class="btn small" onclick="Compras.exportCSV()">📤 Exportar CSV</button>
-        </div>
-        <div class="table" id="compHistTabla"></div>
-      </div>
-    </section>
-    
-
-    <section id="view-historial" class="view page--historial hidden">
+    <section id="view-historial" class="view hidden">
       <div class="panel">
         <div class="panel-title">📜 Historial de ventas</div>
         <div class="filters"><button class="btn small" onclick="Historial.openFiltros()">🔎 Filtros</button><button class="btn small" onclick="Historial.exportCSV()">📤 Exportar CSV</button></div>
@@ -254,7 +216,7 @@
       </div>
     </section>
 
-    <section id="view-reportes" class="view page--reportes hidden">
+    <section id="view-reportes" class="view hidden">
       <div class="panel">
         <div class="panel-title">📊 Reportes</div>
         <div class="tabs">
@@ -303,7 +265,7 @@
       </div>
     </section>
 
-    <section id="view-config" class="view page--config hidden">
+    <section id="view-config" class="view hidden">
       <div class="panel">
         <div class="panel-title">⚙️ Configuración</div>
         <div class="grid-3">
@@ -336,7 +298,7 @@
       </div>
     </section>
 
-    <section id="view-ticket" class="view page--ticket hidden">
+    <section id="view-ticket" class="view hidden">
       <div class="panel">
         <div class="panel-title">🧾 Vista previa de ticket 58mm</div>
         <div class="ticket" id="ticketPreview">
@@ -390,7 +352,7 @@
 </main>
 </div>
 <script>const DEFAULT_LOGO = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScxODAnIGhlaWdodD0nNDgnIHZpZXdCb3g9JzAgMCAxODAgNDgnPgogIDxyZWN0IHdpZHRoPScxODAnIGhlaWdodD0nNDgnIHJ4PScxMCcgZmlsbD0nI2ZmZmZmZicvPgogIDxyZWN0IHg9JzQnIHk9JzQnIHdpZHRoPScxNzInIGhlaWdodD0nNDAnIHJ4PSc4JyBmaWxsPScjZDAwJyBvcGFjaXR5PScwLjA4Jy8+CiAgPHRleHQgeD0nMTQnIHk9JzMwJyBmb250LXNpemU9JzIwJyBmaWxsPScjMTExJyBmb250LWZhbWlseT0nQXJpYWwgQmxhY2ssIEFyaWFsJz5ESU5BTUlUQTwvdGV4dD4KICA8dGV4dCB4PScxMjAnIHk9JzMwJyBmb250LXNpemU9JzE2JyBmaWxsPScjZDAwJyBmb250LWZhbWlseT0nQXJpYWwgQmxhY2ssIEFyaWFsJz5QT1M8L3RleHQ+Cjwvc3ZnPg==";</script>
-<script src="app.js?v=4.2"></script>
+<script src="app.js?v=4.2.1"></script>
 <script>
 // drawer toggle
 document.addEventListener('DOMContentLoaded',()=>{
