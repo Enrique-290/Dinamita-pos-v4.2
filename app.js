@@ -161,7 +161,7 @@ window.Compras = {
   buscarYAgregar(q){
     if(!q) return;
     q=q.toLowerCase();
-    const p=(state.products||[]).find(x=> (x.sku||'').toLowerCase()===q or (x.codigo||'').toLowerCase()===q or (x.nombre||'').toLowerCase().includes(q) );
+    const p=(state.products||[]).find(x=> (x.sku||'').toLowerCase()===q || (x.codigo||'').toLowerCase()===q || (x.nombre||'').toLowerCase().includes(q) );
     if(!p){ alert('Producto no encontrado'); return; }
     const i=this._detalle.findIndex(x=>x.sku===p.sku);
     if(i>=0) this._detalle[i].qty += 1;
@@ -235,3 +235,23 @@ window.Compras = {
 };
 document.addEventListener('DOMContentLoaded',()=>{ if(document.getElementById('compras')) Compras.init(); });
 
+
+
+// --- Robust hash navigation fallback ---
+(function(){
+  function showByHash(){
+    var id = (location.hash||'').replace('#','') || 'dashboard';
+    var sections = document.querySelectorAll('main .page');
+    sections.forEach(function(s){ s.classList.add('hidden'); });
+    var el = document.getElementById(id);
+    if(el){ el.classList.remove('hidden'); }
+  }
+  window.addEventListener('hashchange', showByHash);
+  document.addEventListener('DOMContentLoaded', showByHash);
+  // Replace any <a onclick="UI.show('x')"> to avoid crashes if UI is undefined
+  document.addEventListener('click', function(e){
+    var a = e.target.closest('a[href^="#"]');
+    if(!a) return;
+    // Allow default (hash) – our hashchange handler will toggle views.
+  });
+})();
